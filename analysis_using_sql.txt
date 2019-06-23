@@ -1,0 +1,376 @@
+# 查看部分数据内容
+select * from userbehavior limit 100;
+
+# 查看数据集大小
+select count(*) from userbehavior;
+
+# 删除重复数据
+delete from userbehavior1 where id not in
+(select id from (select MAX(id) as id from userbehavior1 GROUP BY user_id,item_id,behavior_type,datetime) as t1);
+> Affected rows: 0
+
+
+# 查看数据是否为空
+select count(id),count(user_id),count(item_id),count(item_category),count(behavior_type),count(datetime)
+from userbehavior;
+
+# 查看用户行为有哪几种
+select behavior_type,count(behavior_type) from userbehavior1 GROUP BY behavior_type;
+
+# 查看用户行为重复次数
+select user_id,item_id,behavior_type,item_category,datetime,count(*)  from userbehavior 
+GROUP BY 1,2,3,4,5
+having count(*)>1
+ORDER BY count(*)desc;
+
+# 查看用户行为
+select behavior_type,count(*) 
+from(select user_id,item_id,behavior_type,item_category,datetime,count(*)  from userbehavior 
+GROUP BY 1,2,3,4,5
+having count(*)>1
+ORDER BY count(*)desc) as t1
+GROUP BY 1;
+
+# 添加日期date、时间time列
+ALTER TABLE userbehavior1 ADD date date;
+ALTER TABLE userbehavior1 ADD time VARCHAR(20);
+
+# 在date列截取（年-月-日）信息，在time列截取小时信息
+UPDATE userbehavior SET
+	date=SUBSTRING_INDEX(datetime,' ',1),
+	time=SUBSTRING_INDEX(datetime,' ',-1);
+
+select * from userbehavior;
+
+
+# 总访问量
+select count(*) as '总PV' from userbehavior
+where behavior_type='1';
+
+# 日PV
+select date,count(date) as '日PV' from userbehavior 
+where behavior_type='1' GROUP BY date ORDER BY date;
+
+# 用户总数
+SELECT COUNT(distinct(user_id)) as '用户总数' from userbehavior;
+
+# 日新增用户
+select c.date as firstday,count(distinct(c.user_id))as day_0 from
+(select a.user_id,a.date,datediff(a.date,b.firstday) as by_day from userbehavior as a 
+inner join
+(select user_id,min(date) as firstday from userbehavior group by user_id) as b
+on a.user_id=b.user_id) as c
+where by_day=0 group by c.date order by c.date;
+
+# 日UV
+select date,count(distinct(user_id)) as '日UV' 
+from userbehavior where behavior_type='1' group by date;
+
+#日PV/日UV
+select date,count(behavior_type)/count(distinct(user_id)) as '平均访问量'
+from userbehavior where behavior_type='1' group by date;
+
+# 时间维度（PV、buy、cart、fav）
+select time,
+sum(case when behavior_type='1' then 1 else 0 end)as 'PV',
+sum(case when behavior_type='2' then 1 else 0 end)as 'buy',
+sum(case when behavior_type='3' then 1 else 0 end)as 'cart',
+sum(case when behavior_type='4' then 1 else 0 end)as 'fav'
+from userbehavior
+group by time order by time;
+
+# 日购买单数
+select date,count(behavior_type) from userbehavior
+where behavior_type='2' 
+group by date order by date;
+
+# 留存人数
+select d.firstday,
+sum(case when by_day=0  then 1 else 0 end) as day_0,
+sum(case when by_day=1  then 1 else 0 end) as day_1,
+sum(case when by_day=2  then 1 else 0 end) as day_2,
+sum(case when by_day=3  then 1 else 0 end) as day_3,
+sum(case when by_day=4  then 1 else 0 end) as day_4,
+sum(case when by_day=5  then 1 else 0 end) as day_5,
+sum(case when by_day=6  then 1 else 0 end) as day_6,
+sum(case when by_day=7  then 1 else 0 end) as day_7,
+sum(case when by_day=8  then 1 else 0 end) as day_8,
+sum(case when by_day=9  then 1 else 0 end) as day_9,
+sum(case when by_day=10 then 1 else 0 end) as day_10,
+sum(case when by_day=11 then 1 else 0 end) as day_11,
+sum(case when by_day=12 then 1 else 0 end) as day_12,
+sum(case when by_day=13 then 1 else 0 end) as day_13,
+sum(case when by_day=14 then 1 else 0 end) as day_14,
+sum(case when by_day=15 then 1 else 0 end) as day_15,
+sum(case when by_day=16 then 1 else 0 end) as day_16,
+sum(case when by_day=17 then 1 else 0 end) as day_17,
+sum(case when by_day=18 then 1 else 0 end) as day_18,
+sum(case when by_day=19 then 1 else 0 end) as day_19,
+sum(case when by_day=20 then 1 else 0 end) as day_20,
+sum(case when by_day=21 then 1 else 0 end) as day_21,
+sum(case when by_day=22 then 1 else 0 end) as day_22,
+sum(case when by_day=23 then 1 else 0 end) as day_23,
+sum(case when by_day=24 then 1 else 0 end) as day_24,
+sum(case when by_day=25 then 1 else 0 end) as day_25,
+sum(case when by_day=26 then 1 else 0 end) as day_26,
+sum(case when by_day=27 then 1 else 0 end) as day_27,
+sum(case when by_day=28 then 1 else 0 end) as day_28,
+sum(case when by_day=29 then 1 else 0 end) as day_29,
+sum(case when by_day=30 then 1 else 0 end) as day_30 from
+(select c.user_id,c.date,c.firstday,c.by_day from 
+(select a.user_id,a.date,datediff(a.date,b.firstday) as by_day,b.firstday from userbehavior as a 
+inner join
+(select user_id,min(date) as firstday from userbehavior group by user_id) as b
+on 
+a.user_id=b.user_id) as c
+group by 1,2,3) as d
+group by d.firstday order by d.firstday;
+
+# 留存率
+select e.firstday,e.day_0,
+concat(round(day_1/day_0*100,2),'%') as 'day_1%',
+concat(round(day_2/day_0*100,2),'%') as 'day_2%',
+concat(round(day_3/day_0*100,2),'%') as 'day_3%',
+concat(round(day_4/day_0*100,2),'%') as 'day_4%',
+concat(round(day_5/day_0*100,2),'%') as 'day_5%',
+concat(round(day_6/day_0*100,2),'%') as 'day_6%',
+concat(round(day_7/day_0*100,2),'%') as 'day_7%',
+concat(round(day_8/day_0*100,2),'%') as 'day_8%',
+concat(round(day_9/day_0*100,2),'%') as 'day_9%',
+concat(round(day_10/day_0*100,2),'%') as 'day_10%',
+concat(round(day_11/day_0*100,2),'%') as 'day_11%',
+concat(round(day_12/day_0*100,2),'%') as 'day_12%',
+concat(round(day_13/day_0*100,2),'%') as 'day_13%',
+concat(round(day_14/day_0*100,2),'%') as 'day_14%',
+concat(round(day_15/day_0*100,2),'%') as 'day_15%',
+concat(round(day_16/day_0*100,2),'%') as 'day_16%',
+concat(round(day_17/day_0*100,2),'%') as 'day_17%',
+concat(round(day_18/day_0*100,2),'%') as 'day_18%',
+concat(round(day_19/day_0*100,2),'%') as 'day_19%',
+concat(round(day_20/day_0*100,2),'%') as 'day_20%',
+concat(round(day_21/day_0*100,2),'%') as 'day_21%',
+concat(round(day_22/day_0*100,2),'%') as 'day_22%',
+concat(round(day_23/day_0*100,2),'%') as 'day_23%',
+concat(round(day_24/day_0*100,2),'%') as 'day_24%',
+concat(round(day_25/day_0*100,2),'%') as 'day_25%',
+concat(round(day_26/day_0*100,2),'%') as 'day_26%',
+concat(round(day_27/day_0*100,2),'%') as 'day_27%',
+concat(round(day_28/day_0*100,2),'%') as 'day_28%',
+concat(round(day_29/day_0*100,2),'%') as 'day_29%',
+concat(round(day_30/day_0*100,2),'%') as 'day_30%' from
+(select d.firstday,
+sum(case when by_day=0  then 1 else 0 end) as day_0,
+sum(case when by_day=1  then 1 else 0 end) as day_1,
+sum(case when by_day=2  then 1 else 0 end) as day_2,
+sum(case when by_day=3  then 1 else 0 end) as day_3,
+sum(case when by_day=4  then 1 else 0 end) as day_4,
+sum(case when by_day=5  then 1 else 0 end) as day_5,
+sum(case when by_day=6  then 1 else 0 end) as day_6,
+sum(case when by_day=7  then 1 else 0 end) as day_7,
+sum(case when by_day=8  then 1 else 0 end) as day_8,
+sum(case when by_day=9  then 1 else 0 end) as day_9,
+sum(case when by_day=10 then 1 else 0 end) as day_10,
+sum(case when by_day=11 then 1 else 0 end) as day_11,
+sum(case when by_day=12 then 1 else 0 end) as day_12,
+sum(case when by_day=13 then 1 else 0 end) as day_13,
+sum(case when by_day=14 then 1 else 0 end) as day_14,
+sum(case when by_day=15 then 1 else 0 end) as day_15,
+sum(case when by_day=16 then 1 else 0 end) as day_16,
+sum(case when by_day=17 then 1 else 0 end) as day_17,
+sum(case when by_day=18 then 1 else 0 end) as day_18,
+sum(case when by_day=19 then 1 else 0 end) as day_19,
+sum(case when by_day=20 then 1 else 0 end) as day_20,
+sum(case when by_day=21 then 1 else 0 end) as day_21,
+sum(case when by_day=22 then 1 else 0 end) as day_22,
+sum(case when by_day=23 then 1 else 0 end) as day_23,
+sum(case when by_day=24 then 1 else 0 end) as day_24,
+sum(case when by_day=25 then 1 else 0 end) as day_25,
+sum(case when by_day=26 then 1 else 0 end) as day_26,
+sum(case when by_day=27 then 1 else 0 end) as day_27,
+sum(case when by_day=28 then 1 else 0 end) as day_28,
+sum(case when by_day=29 then 1 else 0 end) as day_29,
+sum(case when by_day=30 then 1 else 0 end) as day_30 from
+(select c.user_id,c.date,c.firstday,c.by_day from 
+(select a.user_id,a.date,datediff(a.date,b.firstday) as by_day,b.firstday from userbehavior as a 
+inner join
+(select user_id,min(date) as firstday from userbehavior group by user_id) as b
+on 
+a.user_id=b.user_id) as c
+group by 1,2,3) as d
+group by d.firstday order by d.firstday)as e;
+
+# 购买次数大于等于2次的用户
+create view f as
+select DISTINCT user_id , count(behavior_type) as '购买次数' from `userbehavior`
+where behavior_type='2' 
+group by user_id
+having 购买次数>=2;
+
+# 购买用户总数
+select count(DISTINCT user_id) from userbehavior where behavior_type='2';
+
+# 复购率
+select 
+(select count(*) from f)/(select count(DISTINCT user_id) from userbehavior where behavior_type='2') 
+as '复购率' from userbehavior limit 1;
+
+# 复购频次分类
+select 购买次数,count(user_id) as 购买人数 from f group by 购买次数 order by 购买次数;
+
+# 转化率
+select '选购商品' as 类别,(1)as 转化率
+union all
+select '购买转化率' as 类别,
+round((select count(*) from userbehavior where behavior_type='2')
+	/(select count(*) from userbehavior where behavior_type='1'),4)as 转化率
+union all
+select '购物车转化率' as 类别,
+round((select count(*) from userbehavior where behavior_type='3')
+	/(select count(*) from userbehavior where behavior_type='1'),2)as 转化率
+union all
+select '收藏转化率' as 类别,
+round((select count(*) from userbehavior where behavior_type='4')
+	/(select count(*) from userbehavior where behavior_type='1'),4)as 转化率;
+
+# 用户的行为‘PV’用从‘1’替换为‘8’
+update userbehavior set behavior_type='8' where behavior_type='1';
+运行结果：
+受影响的行: 11550581
+时间: 357.742ms
+
+# 用户行为：浏览、收藏、加购物车、购买
+create table p_c_f_b as
+select user_id,item_id,item_category,sum(distinct(behavior_type))as behavior from userbehavior
+group by 1,2,3;
+受影响的行: 4686904
+时间: 4610.473ms
+
+# 具体的用户行为
+select behavior from p_c_f_b group by behavior order by behavior;
+
+# Table p_c_f_b 分组计数
+create table pcfb_count as
+select behavior,count(distinct(user_id)) as user ,
+count(distinct(item_category)) as category,
+count(distinct user_id,item_category) as user_category,
+count(distinct user_id,item_category,item_id) as user_item
+from p_c_f_b group by behavior;
+> OK
+> Time: 157.942s
+
+# 8种用户行为分组计数
+select pcfb, sum(user),sum(category),sum(user_category),sum(user_item)
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb;
+
+# 用户行为路径分组计数
+select 'PV' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+union all
+select 'PV,cart' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+where a.pcfb like 'PV%cart%'
+union all
+select 'PV,cart,buy' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+where a.pcfb like 'PV%cart%buy'
+union all
+select 'PV,fav' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+where a.pcfb like 'PV%fav%'
+union all
+select 'PV,fav,buy' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+where a.pcfb like 'PV%fav%buy'
+union all
+select 'PV,buy' as pcfb, sum(user), sum(category),sum(user_category),sum(user_item) from 
+(select pcfb, sum(user) as user,sum(category) as category,
+sum(user_category) as user_category,sum(user_item) as user_item
+from pcfb_count inner join pcfb_value
+on pcfb_count.behavior=pcfb_value.behavior
+group by pcfb) as a
+where a.pcfb = 'PV,buy';
+
+# 商品类别计数
+select item_category as 浏览品类,count(item_category)as 浏览次数 from p_c_f_b
+group by item_category order by count(item_category) desc limit 10;
+
+select item_category as 购买品类,count(item_category)as 购买次数 from p_c_f_b
+where behavior in('2','5','6','9','10','13','14','17')
+group by item_category order by count(item_category) desc limit 10;
+
+select item_category as 加购物车品类,count(item_category)as 加购物车次数 from p_c_f_b
+where behavior in('3','4','5','7','9','11','13','15','17')
+group by item_category order by count(item_category) desc limit 10;
+
+select item_category as 收藏品类,count(item_category)as 收藏次数 from p_c_f_b
+where behavior in('6','7','9','2','4','15','17')
+group by item_category order by count(item_category) desc limit 10;
+
+# 创建R等级视图
+create view R as
+select user_id,max(date) as '近期购买时间' from userbehavior
+where behavior_type='8'
+group by user_id;
+
+create view Rec
+as
+select user_id, 近期购买时间 ,
+(case  when datediff('2014-12-19',近期购买时间)<=6 then 5 
+       when datediff('2014-12-19',近期购买时间)<=12 then 4
+       when datediff('2014-12-19',近期购买时间)<=18 then 3
+       when datediff('2014-12-19',近期购买时间)<=24 then 2
+       else 1 end) as 'R' ,
+(case  when datediff('2014-12-19',近期购买时间)<=6 then '5' 
+       when datediff('2014-12-19',近期购买时间)<=12 then '4'
+       when datediff('2014-12-19',近期购买时间)<=18 then '3'
+       when datediff('2014-12-19',近期购买时间)<=24 then '2'
+       else '1' end) as 'R值'from R;
+
+# 查询每个用户的购买次数
+select user_id , count(behavior_type) as 'fre' from userbehavior
+where behavior_type='2' 
+group by user_id
+ORDER BY fre;
+
+# R平均值
+select avg(R) as 'R平均值' FROM rec;
+# F平均值
+select avg(F) as 'F平均值' from fre;
+
+# RFM视图
+create view RFM
+as
+select a.*,b.F, b.F值 ,
+(case when a.R>=4.8987 and b.F>=1.2125 then '重要高价值客户'
+when a.R<4.8987 and b.F>=1.2125 then '重要唤回客户'
+when a.R>=4.8987 and b.F<1.2125 then '重要深耕客户'
+when a.R<4.8987 and b.F<1.2125 then '重要挽留客户'
+end ) as '客户分类'
+from rec as a, fre as b
+where a.user_id=b.user_id;
+
+# 客户分类
+select 客户分类, count(客户分类) as '频数' from RFM
+group  by 客户分类 ;
